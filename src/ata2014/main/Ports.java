@@ -6,6 +6,5 @@ package ata2014.main;
  */
 public interface Ports {
 
-    int LEFT = 5, RIGHT = 4;
-    int ARM = 1;
+    int LEFT_BACK = 1, LEFT_FRONT = 2, RIGHT_BACK = 3, RIGHT_FRONT = 4;
 }

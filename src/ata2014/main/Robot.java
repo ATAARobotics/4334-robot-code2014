@@ -18,14 +18,14 @@ import edu.first.util.log.Logger;
 public final class Robot extends IterativeRobotAdapter implements Constants {
 
     private final XboxController joystick1 = new XboxController(1);
-    private final VictorModule left = new VictorModule(LEFT),
-            right = new VictorModule(RIGHT);
-    private final Drivetrain drivetrain = new Drivetrain(left, right);
-    private final VictorModule arm = new VictorModule(ARM);
+    private final VictorModule leftBack = new VictorModule(LEFT_BACK),
+            leftFront = new VictorModule(LEFT_FRONT),
+            rightBack = new VictorModule(RIGHT_BACK),
+            rightFront = new VictorModule(RIGHT_FRONT);
+    private final Drivetrain drivetrain = new Drivetrain(leftFront, leftBack, rightFront, rightBack);
     private final Subsystem FULL_ROBOT = new SubsystemBuilder()
             .add(joystick1)
-            .add(drivetrain).add(left).add(right)
-            .add(arm)
+            .add(drivetrain).add(leftBack).add(leftFront).add(rightBack).add(rightFront)
             .toSubsystem();
 
     public Robot() {
@@ -47,7 +47,6 @@ public final class Robot extends IterativeRobotAdapter implements Constants {
         FULL_ROBOT.enable();
 
         joystick1.addAxisBind(drivetrain.getArcade(joystick1.getLeftY(), joystick1.getRightX()));
-        joystick1.addAxisBind(joystick1.getTrigger(), arm);
     }
 
     public void initDisabled() {
