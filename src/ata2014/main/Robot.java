@@ -1,13 +1,13 @@
 package ata2014.main;
 
 import edu.first.main.Constants;
+import edu.first.module.actuators.Drivetrain;
+import edu.first.module.actuators.VictorModule;
+import edu.first.module.joysticks.XboxController;
 import edu.first.module.subsystems.Subsystem;
 import edu.first.module.subsystems.SubsystemBuilder;
 import edu.first.robot.IterativeRobotAdapter;
-import edu.first.util.File;
-import edu.first.util.TextFiles;
 import edu.first.util.log.Logger;
-import org.gordian.scope.GordianScope;
 
 /**
  * Team 4334's main robot code starting point. Everything that happens is
@@ -17,10 +17,15 @@ import org.gordian.scope.GordianScope;
  */
 public final class Robot extends IterativeRobotAdapter implements Constants {
 
-    private final File AUTONOMOUS = new File("2014 Autonomous.txt");
+    private final XboxController joystick1 = new XboxController(1);
+    private final VictorModule left = new VictorModule(LEFT),
+            right = new VictorModule(RIGHT);
+    private final Drivetrain drivetrain = new Drivetrain(left, right);
+    private final VictorModule arm = new VictorModule(ARM);
     private final Subsystem FULL_ROBOT = new SubsystemBuilder()
-            .add(joysticks)
-            .add(drivetrainSubsystem)
+            .add(joystick1)
+            .add(drivetrain).add(left).add(right)
+            .add(arm)
             .toSubsystem();
 
     public Robot() {
@@ -28,26 +33,21 @@ public final class Robot extends IterativeRobotAdapter implements Constants {
     }
 
     public void init() {
-        Logger.addLogToAll(new Logger.FileLog(new File("2014 Log File.txt")));
-
         Logger.getLogger(this).warn("Robot is initializing");
         FULL_ROBOT.init();
         Logger.getLogger(this).warn("Robot is ready");
     }
 
     public void initAutonomous() {
-        Logger.getLogger(this).info("Autonomous starting...");
-        GordianScope autonomous = new GordianScope();
-        autonomous.run(TextFiles.getTextFromFile(AUTONOMOUS));
     }
 
     public void initTeleoperated() {
         Logger.getLogger(this).info("Teleoperated starting...");
 
-        joysticks.enable();
-        drivetrainSubsystem.enable();
+        FULL_ROBOT.enable();
 
         joystick1.addAxisBind(drivetrain.getArcade(joystick1.getLeftY(), joystick1.getRightX()));
+        joystick1.addAxisBind(joystick1.getTrigger(), arm);
     }
 
     public void initDisabled() {
@@ -64,7 +64,6 @@ public final class Robot extends IterativeRobotAdapter implements Constants {
 
     public void periodicTeleoperated() {
         joystick1.doBinds();
-        joystick2.doBinds();
     }
 
     public void periodicDisabled() {
@@ -79,7 +78,6 @@ public final class Robot extends IterativeRobotAdapter implements Constants {
 
     public void endTeleoperated() {
         joystick1.clearBinds();
-        joystick2.clearBinds();
 
         Logger.getLogger(this).warn("Teleoperated finished");
     }

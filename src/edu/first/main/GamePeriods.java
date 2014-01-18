@@ -11,6 +11,7 @@ import edu.first.robot.RobotMode;
 import edu.first.robot.RobotModeSelector;
 import edu.first.robot.SafeRobotMode;
 import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * This class is called by the VM automatically for every game mode. It is meant
