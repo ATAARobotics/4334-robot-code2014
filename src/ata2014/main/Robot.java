@@ -8,7 +8,8 @@ import edu.first.module.subsystems.Subsystem;
 import edu.first.module.subsystems.SubsystemBuilder;
 import edu.first.robot.IterativeRobotAdapter;
 import edu.first.util.log.Logger;
-
+import edu.first.module.joysticks.BindingJoystick;
+import edu.first.util.MathUtils;
 /**
  * Team 4334's main robot code starting point. Everything that happens is
  * derived from this class.
@@ -46,7 +47,24 @@ public final class Robot extends IterativeRobotAdapter implements Constants {
 
         FULL_ROBOT.enable();
 
-        joystick1.addAxisBind(drivetrain.getArcade(joystick1.getLeftY(), joystick1.getRightX()));
+        joystick1.addAxisBind(new BindingJoystick.DualAxisBind(joystick1.getLeftY(), joystick1.getRightX()) {
+
+            public void doBind(double x, double axis2) {
+                if (MathUtils.abs(x) < 0.1) {
+                    x = 0;
+                }
+                if (MathUtils.abs(axis2) < 0.1) {
+                    axis2 = 0;
+                }
+                
+                boolean neg = x < 0;
+                x = MathUtils.abs(x);
+                x = (-2.398 * MathUtils.pow(x, 3) + 3.597 * MathUtils.pow(x, 2) - 0.199 * x - 4.18560022E-05);
+                x = neg ? -x : x;
+                
+                drivetrain.arcadeDrive(x, axis2);
+            }
+        });
     }
 
     public void initDisabled() {
