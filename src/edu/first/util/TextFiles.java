@@ -68,9 +68,6 @@ public final class TextFiles {
                 if (stream != null) {
                     stream.close();
                 }
-                if (fileCon != null) {
-                    fileCon.close();
-                }
             } catch (Exception ex) {
                 Logger.getLogger(TextFiles.class).error("File could not be closed", ex);
             }
@@ -110,9 +107,6 @@ public final class TextFiles {
                 }
                 if (stream != null) {
                     stream.close();
-                }
-                if (fileCon != null) {
-                    fileCon.close();
                 }
             } catch (Exception ex) {
                 Logger.getLogger(TextFiles.class).error("File could not be closed", ex);
