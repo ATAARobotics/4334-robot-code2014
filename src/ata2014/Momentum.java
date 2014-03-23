@@ -1,5 +1,7 @@
 package ata2014;
 
+import ata2014.commands.Shoot;
+import edu.first.commands.ThreadedCommand;
 import edu.first.commands.common.DisableModule;
 import edu.first.commands.common.EnableModule;
 import edu.first.commands.common.ReverseDualActionSolenoid;
@@ -115,8 +117,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
                 joystick1.addAxisBind(drivetrain.getTank(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightDistanceFromMiddle()));
             }
         }
-        joystick1.addWhenPressed(XboxController.A, new SetDualActionSolenoid(winchRelease, DualActionSolenoid.Direction.LEFT));
-        joystick1.addWhenPressed(XboxController.A, new SetDualActionSolenoid(loaderPiston, DualActionSolenoid.Direction.RIGHT));
+        joystick1.addWhenPressed(XboxController.A, new ThreadedCommand(new Shoot(loaderPiston, DualActionSolenoid.Direction.RIGHT,
+                winchRelease, DualActionSolenoid.Direction.LEFT)));
         joystick1.addWhenPressed(XboxController.A, new SetSwitch(winchLimitIndicator, false));
         joystick1.addWhenPressed(XboxController.B, new ReverseDualActionSolenoid(shifters));
         joystick1.addWhenPressed(XboxController.X, new ReverseDualActionSolenoid(loaderPiston));
@@ -161,8 +163,6 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     }
 
     public void initTeleoperated() {
-        // reload settings, and update values for togglable modules
-        reloadSettings();
         TELEOP_MODULES.enable();
 
         if (DRIVING_PID.getPosition()) {
@@ -210,6 +210,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
 
     public void initDisabled() {
         Logger.getLogger(this).info("Disabled starting...");
+        // reload settings, and update values for togglable modules
+        reloadSettings();
         ALL_MODULES.disable();
     }
 
@@ -218,7 +220,7 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
 
     public void reloadSettings() {
         settings.reload();
-        
+
         loaderController.setTolerance(LOADER_TOLERANCE.get());
         loaderController.setP(LOADER_P.get());
         loaderController.setI(LOADER_I.get());
