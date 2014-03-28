@@ -7,6 +7,7 @@ import edu.first.commands.common.EnableModule;
 import edu.first.commands.common.ReverseDualActionSolenoid;
 import edu.first.commands.common.SetDualActionSolenoid;
 import edu.first.commands.common.SetOutput;
+import edu.first.commands.common.SetSpikeRelay;
 import edu.first.commands.common.SetSwitch;
 import edu.first.identifiers.Function;
 import edu.first.identifiers.TransformedOutput;
@@ -32,7 +33,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Momentum extends IterativeRobotAdapter implements Constants {
 
-    {
+    static {
         // Let the drivers know that code is currently initializing
         Logger.displayLCDMessage("DO NOT ENABLE");
     }
@@ -45,7 +46,6 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     });
     private final Subsystem ALL_MODULES = new Subsystem(new Module[]{TELEOP_MODULES, AUTO_MODULES,
         // Modules that are turned on conditionally
-        drivingPID,
         winchBack, winchController,
         loaderController
     });
@@ -88,6 +88,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
      .... Left Bumper - Gear 1
      .... Right Bumper - Gear 2
      .... Triggers - 
+     .... Start - Photon Cannon ON
+     .... Back - Photon Cannon OFF
 
      Joystick 2
      .... A - Bring winch back
@@ -104,27 +106,29 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
 
      */
     private void addBinds() {
-        if (DRIVING_PID.getPosition() && CONTROL_STYLE.equalsIgnoreCase("arcade")) {
+        if (CONTROL_STYLE.equalsIgnoreCase("arcade")) {
             joystick1.changeAxis(XboxController.LEFT_FROM_MIDDLE, drivingAlgorithm);
-            joystick1.addAxisBind(drivingPID.getArcade(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightX()));
-        } else {
-            if (CONTROL_STYLE.equalsIgnoreCase("arcade")) {
-                joystick1.changeAxis(XboxController.LEFT_FROM_MIDDLE, drivingAlgorithm);
-                joystick1.addAxisBind(drivetrain.getArcade(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightX()));
-            } else if (CONTROL_STYLE.equalsIgnoreCase("tank")) {
-                joystick1.changeAxis(XboxController.LEFT_FROM_MIDDLE, drivingAlgorithm);
-                joystick1.changeAxis(XboxController.RIGHT_FROM_MIDDLE, drivingAlgorithm);
-                joystick1.addAxisBind(drivetrain.getTank(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightDistanceFromMiddle()));
-            }
+            joystick1.addAxisBind(drivetrain.getArcade(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightX()));
+        } else if (CONTROL_STYLE.equalsIgnoreCase("tank")) {
+            joystick1.changeAxis(XboxController.LEFT_FROM_MIDDLE, drivingAlgorithm);
+            joystick1.changeAxis(XboxController.RIGHT_FROM_MIDDLE, drivingAlgorithm);
+            joystick1.addAxisBind(drivetrain.getTank(joystick1.getLeftDistanceFromMiddle(), joystick1.getRightDistanceFromMiddle()));
         }
         joystick1.addWhenPressed(XboxController.A, new ThreadedCommand(new Shoot(loaderPiston, DualActionSolenoid.Direction.RIGHT,
                 winchRelease, DualActionSolenoid.Direction.LEFT)));
         joystick1.addWhenPressed(XboxController.A, new SetSwitch(winchLimitIndicator, false));
         joystick1.addWhenPressed(XboxController.B, new ReverseDualActionSolenoid(shifters));
         joystick1.addWhenPressed(XboxController.X, new ReverseDualActionSolenoid(loaderPiston));
-        joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.LEFT));
-        joystick1.addWhenPressed(XboxController.RIGHT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.RIGHT));
         if (MAC_MODE) {
+            Logger.getLogger(this).warn("Mac mode ON");
+            /*
+             Y - Winch Back
+             Left Bumper - Winch and store loader
+             Right Bumper - Load position
+             Triggers - Manual Control
+             */
+            joystick1.addWhenPressed(XboxController.Y, new EnableModule(winchBack));
+            joystick1.addWhenPressed(XboxController.Y, new SetDualActionSolenoid(winchRelease, DualActionSolenoid.Direction.RIGHT));
             joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new EnableModule(winchBack));
             joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(winchRelease, DualActionSolenoid.Direction.RIGHT));
             joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(loaderPiston, DualActionSolenoid.Direction.LEFT));
@@ -137,8 +141,13 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
             joystick1.addAxisBind(XboxController.TRIGGERS, new TransformedOutput(new TransformedOutput(loaderMotors,
                     new Function.ProductFunction(LOADER_MAX_SPEED)),
                     new Function.OppositeFunction()));
+        } else {
+            joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.LEFT));
+            joystick1.addWhenPressed(XboxController.RIGHT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.RIGHT));
         }
 
+        joystick1.addWhenPressed(XboxController.START, new SetSpikeRelay(photonCannon, SpikeRelay.Direction.FORWARDS));
+        joystick1.addWhenPressed(XboxController.BACK, new SetSpikeRelay(photonCannon, SpikeRelay.Direction.OFF));
         joystick2.addWhenPressed(XboxController.A, new EnableModule(winchBack));
         joystick2.addWhenPressed(XboxController.A, new SetDualActionSolenoid(winchRelease, DualActionSolenoid.Direction.RIGHT));
         joystick2.addWhenPressed(XboxController.B, new DisableModule(winchBack));
@@ -165,9 +174,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     public void initTeleoperated() {
         TELEOP_MODULES.enable();
 
-        if (DRIVING_PID.getPosition()) {
-            drivingPID.enable();
-        }
+        reloadSettings();
+
         if (WINCH_CONTROL.getPosition()) {
             winchPosition.enable();
             winchController.enable();
@@ -199,7 +207,7 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     public void initAutonomous() {
         Logger.getLogger(this).info("Autonomous starting...");
         AUTO_MODULES.enable();
-        settings.reload();
+        reloadSettings();
         Autonomous autonomous = new Autonomous();
         autonomous.run(TextFiles.getTextFromFile(new File(settings.getString("AutoFile", "Autonomous.txt"))));
     }
@@ -210,8 +218,6 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
 
     public void initDisabled() {
         Logger.getLogger(this).info("Disabled starting...");
-        // reload settings, and update values for togglable modules
-        reloadSettings();
         ALL_MODULES.disable();
     }
 
@@ -225,9 +231,5 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
         loaderController.setP(LOADER_P.get());
         loaderController.setI(LOADER_I.get());
         loaderController.setD(LOADER_D.get());
-        drivingPID.getPID().setP(DRIVING_P.get());
-        drivingPID.getPID().setI(DRIVING_I.get());
-        drivingPID.getPID().setD(DRIVING_D.get());
-        drivingPID.setMaxSpeed(DRIVING_MAX_SPEED.get());
     }
 }

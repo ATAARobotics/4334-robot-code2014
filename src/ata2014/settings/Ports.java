@@ -22,6 +22,7 @@ public interface Ports extends Files {
             _leftDriveEncoderB = 4;
     int _rightDriveEncoderA = 5,
             _rightDriveEncoderB = 6;
+    int _photonCannon = 3;
 
     // --- Loader
     int _leftLoaderMotor = 9,
@@ -59,6 +60,7 @@ public interface Ports extends Files {
             LEFT_DRIVE_ENCODER_B = ports.getInt("LeftDriveEncoderB", _leftDriveEncoderB);
     int RIGHT_DRIVE_ENCODER_A = ports.getInt("RightDriveEncoderA", _rightDriveEncoderA),
             RIGHT_DRIVE_ENCODER_B = ports.getInt("RightDriveEncoderB", _rightDriveEncoderB);
+    int PHOTON_CANNON = ports.getInt("PhotonCannon", _photonCannon);
 
     // --- Loader
     int LEFT_LOADER_MOTOR = ports.getInt("LeftLoaderMotor", _leftLoaderMotor),
