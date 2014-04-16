@@ -1,6 +1,7 @@
 package ata2014;
 
 import ata2014.commands.Shoot;
+import ata2014.modules.CheesyVisionServer;
 import edu.first.commands.ThreadedCommand;
 import edu.first.commands.common.DisableModule;
 import edu.first.commands.common.EnableModule;
@@ -42,7 +43,7 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
         joysticks, compressor, drive, shifters, winch, loader
     });
     private final Subsystem AUTO_MODULES = new Subsystem(new Module[]{
-        drive, winch, loader
+        CheesyVisionServer.getInstance(), drive, winch, loader
     });
     private final Subsystem ALL_MODULES = new Subsystem(new Module[]{TELEOP_MODULES, AUTO_MODULES,
         // Modules that are turned on conditionally
@@ -64,9 +65,15 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
         Logger.addLogToAll(new Logger.FileLog(logFile));
 
         reloadSettings();
+        if (!DRIVING_INVERSED) {
+            drivetrain.setReversed(true);
+        }
         drivetrain.setReversedTurn(true);
 
         ALL_MODULES.init();
+
+        // initialise autonomous for performance
+        Autonomous.getInstance();
 
         // add joystick binds
         addBinds();
@@ -181,6 +188,7 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
             winchController.enable();
         }
 
+        drivetrain.setSafetyEnabled(true);
         loaderPiston.set(DualActionSolenoid.Direction.LEFT);
         shifters.set(DualActionSolenoid.Direction.LEFT);
 
@@ -207,9 +215,15 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     public void initAutonomous() {
         Logger.getLogger(this).info("Autonomous starting...");
         AUTO_MODULES.enable();
-        reloadSettings();
-        Autonomous autonomous = new Autonomous();
-        autonomous.run(TextFiles.getTextFromFile(new File(settings.getString("AutoFile", "Autonomous.txt"))));
+
+        drivetrain.setSafetyEnabled(false);
+        String file = TextFiles.getTextFromFile(new File(settings.getString("AutoFile", "Autonomous.txt")));
+        Logger.getLogger(this).info("Script starting...");
+        try {
+            Autonomous.getInstance().run(file);
+        } catch (RuntimeException killScript) {
+            Logger.getLogger(Autonomous.getInstance()).error("Script was killed", killScript);
+        }
     }
 
     public void endAutonomous() {

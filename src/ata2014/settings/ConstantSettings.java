@@ -14,6 +14,7 @@ public interface ConstantSettings extends Files {
     String CONTROL_STYLE = constants.getString("ControlStyle", "arcade");
     
     boolean MAC_MODE = constants.getBoolean("MacMode", false);
+    boolean DRIVING_INVERSED = constants.getBoolean("DrivingInversed", false);
 
     double DRIVING_SENSITIVITY = constants.getDouble("DrivingSensitivity", 0.5);
     double JOYSTICK_DEADBAND = constants.getDouble("JoystickDeadband", 0.20);

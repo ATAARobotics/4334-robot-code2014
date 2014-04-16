@@ -2,6 +2,7 @@ package ata2014;
 
 import api.gordian.Object;
 import api.gordian.Signature;
+import ata2014.modules.CheesyVisionServer;
 import ata2014.subsystems.Drive;
 import ata2014.subsystems.Loader;
 import ata2014.subsystems.Winch;
@@ -15,6 +16,7 @@ import edu.first.module.controllers.PIDController;
 import edu.first.module.sensors.DigitalInput;
 import edu.first.module.sensors.EncoderModule;
 import edu.first.util.DriverstationInfo;
+import edu.first.util.log.Logger;
 import org.gordian.method.GordianMethod;
 import org.gordian.scope.GordianScope;
 import org.gordian.value.GordianBoolean;
@@ -27,6 +29,7 @@ import org.gordian.value.GordianString;
  */
 public class Autonomous extends GordianScope {
 
+    private static final GordianCheesyVision CHEESY_VISION = new GordianCheesyVision(CheesyVisionServer.getInstance());
     private static final GordianDrivetrain DRIVETRAIN = new GordianDrivetrain(Drive.drivetrain);
     private static final GordianEncoder LEFT_DRIVE_ENCODER = new GordianEncoder(Drive.leftDriveEncoder);
     private static final GordianEncoder RIGHT_DRIVE_ENCODER = new GordianEncoder(Drive.rightDriveEncoder);
@@ -37,12 +40,32 @@ public class Autonomous extends GordianScope {
     private static final GordianDualActionSolenoid LOADER_PISTON = new GordianDualActionSolenoid(Loader.loaderPiston);
     private static final GordianPIDController LOADER_CONTROLLER = new GordianPIDController(Loader.loaderController);
 
-    public Autonomous() {
+    private static final Autonomous instance = new Autonomous();
+
+    public static Autonomous getInstance() {
+        return instance;
+    }
+
+    private Autonomous() {
         methods().put("isAutonomous", new GordianMethod(new Signature()) {
             public Object run(Object[] args) {
                 return new GordianBoolean(DriverstationInfo.isAutonomous() && DriverstationInfo.isEnabled());
             }
         });
+        methods().put("killScript", new GordianMethod(new Signature()) {
+            public Object run(Object[] args) {
+                quit();
+                return null;
+            }
+        });
+        methods().put("tellDriver", new GordianMethod(new Signature(new api.gordian.Class[]{GordianString.CLASS})) {
+            public Object run(Object[] args) {
+                String message = ((GordianString) args[0]).getValue();
+                Logger.displayLCDMessage(message);
+                return null;
+            }
+        });
+        variables().put("hotGoal", CHEESY_VISION);
         variables().put("drivetrain", DRIVETRAIN);
         variables().put("leftDriveEncoder", LEFT_DRIVE_ENCODER);
         variables().put("rightDriveEncoder", RIGHT_DRIVE_ENCODER);
@@ -78,6 +101,48 @@ public class Autonomous extends GordianScope {
             methods().put("isEnabled", new GordianMethod(new Signature()) {
                 public Object run(Object[] args) {
                     return new GordianBoolean(module.isEnabled());
+                }
+            });
+        }
+    }
+
+    private static class GordianCheesyVision extends GordianModule {
+
+        public GordianCheesyVision(final CheesyVisionServer server) {
+            super(server);
+            methods().put("isLeftHot", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianBoolean(server.getLeftStatus() && !server.getRightStatus());
+                }
+            });
+            methods().put("isRightHot", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianBoolean(server.getRightStatus() && !server.getLeftStatus());
+                }
+            });
+            methods().put("isHot", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianBoolean(server.getLeftStatus() && server.getRightStatus());
+                }
+            });
+            methods().put("isDark", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianBoolean(!server.getLeftStatus() && !server.getRightStatus());
+                }
+            });
+            methods().put("leftHotCount", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianNumber(server.getLeftCount());
+                }
+            });
+            methods().put("rightHotCount", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianNumber(server.getRightCount());
+                }
+            });
+            methods().put("totalHotCount", new GordianMethod(new Signature()) {
+                public Object run(Object[] args) {
+                    return new GordianNumber(server.getTotalCount());
                 }
             });
         }
