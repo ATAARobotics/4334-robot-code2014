@@ -19,6 +19,7 @@ import edu.first.module.actuators.SpikeRelay;
 import edu.first.module.joysticks.XboxController;
 import edu.first.module.subsystems.Subsystem;
 import edu.first.robot.IterativeRobotAdapter;
+import edu.first.util.DriverstationInfo;
 import edu.first.util.File;
 import edu.first.util.TextFiles;
 import edu.first.util.dashboard.BooleanDashboard;
@@ -149,8 +150,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
                     new Function.ProductFunction(LOADER_MAX_SPEED)),
                     new Function.OppositeFunction()));
         } else {
-            joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.LEFT));
-            joystick1.addWhenPressed(XboxController.RIGHT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.RIGHT));
+            joystick1.addWhenPressed(XboxController.LEFT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.RIGHT));
+            joystick1.addWhenPressed(XboxController.RIGHT_BUMPER, new SetDualActionSolenoid(shifters, DualActionSolenoid.Direction.LEFT));
         }
 
         joystick1.addWhenPressed(XboxController.START, new SetSpikeRelay(photonCannon, SpikeRelay.Direction.FORWARDS));
@@ -203,6 +204,11 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
         if (winchMotor.atLimit()) {
             winchLimitIndicator.set(true);
         }
+        if (DriverstationInfo.getBatteryVoltage() < 7) {
+            compressorController.disable();
+        } else {
+            compressorController.enable();
+        }
         SmartDashboard.putNumber("Loader", loaderPosition.get());
         SmartDashboard.putBoolean("Gear", shifters.get() == DualActionSolenoid.Direction.LEFT);
     }
@@ -215,6 +221,8 @@ public class Momentum extends IterativeRobotAdapter implements Constants {
     public void initAutonomous() {
         Logger.getLogger(this).info("Autonomous starting...");
         AUTO_MODULES.enable();
+
+        reloadSettings();
 
         drivetrain.setSafetyEnabled(false);
         String file = TextFiles.getTextFromFile(new File(settings.getString("AutoFile", "Autonomous.txt")));
